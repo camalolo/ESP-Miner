@@ -287,6 +287,10 @@ void self_test_record_nonce(void * pvParameters, double nonce_diff)
 
 static bool self_test_should_run()
 {
+#ifdef CONFIG_RUN_ON_DEV_BOARD
+    ESP_LOGI(TAG, "Skipping should_test() in dev board mode.");
+    return false;
+#endif
     bool is_factory_flash = nvs_config_get_u64(NVS_CONFIG_BEST_DIFF) < 1;
     bool is_self_test_flag_set = nvs_config_get_bool(NVS_CONFIG_SELF_TEST);
     if (is_factory_flash && is_self_test_flag_set) {

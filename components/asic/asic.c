@@ -11,6 +11,12 @@
 #include "device_config.h"
 #include "frequency_transition_bmXX.h"
 
+#ifdef CONFIG_RUN_ON_DEV_BOARD
+#include "../../main/simulation/asic_sim.h"
+#endif
+
+static const double NONCE_SPACE = 4294967296.0; //  2^32
+
 static const char *TAG = "asic";
 
 uint8_t ASIC_init(GlobalState * GLOBAL_STATE)
