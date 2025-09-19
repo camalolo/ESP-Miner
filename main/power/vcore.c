@@ -6,6 +6,13 @@
 #include "INA260.h"
 #include "TPS546.h"
 #include "adc.h"
+
+#ifdef CONFIG_RUN_ON_DEV_BOARD
+#include "../simulation/ds4432u_sim.h"
+#include "../simulation/tps546_sim.h"
+#include "../simulation/ina260_sim.h"
+#endif
+
 #include "driver/gpio.h"
 #include "vcore.h"
 

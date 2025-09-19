@@ -1,6 +1,4 @@
-idf_component_register(
-SRCS
-    "adc.c"
+set(SRCS_LIST
     "i2c_bitaxe.c"
     "main.c"
     "nvs_config.c"
@@ -35,13 +33,24 @@ SRCS
     "./thermal/TMP1075.c"
     "./thermal/thermal.c"
     "./thermal/PID.c"
-    "./power/TPS546.c"
-    "./power/DS4432U.c"
-    "./power/INA260.c"
     "./power/power.c"
     "./power/vcore.c"
-    "./power/asic_reset.c"
     "./power/asic_init.c"
+)
+
+if(CONFIG_RUN_ON_DEV_BOARD)
+    list(APPEND SRCS_LIST "simulation/adc_sim.c")
+    list(APPEND SRCS_LIST "simulation/asic_reset_sim.c" "simulation/device_config_sim.c")
+    list(APPEND SRCS_LIST "simulation/tps546_sim.c" "simulation/ds4432u_sim.c" "simulation/ina260_sim.c")
+    list(APPEND SRCS_LIST "simulation/emc2101_sim.c" "simulation/emc2103_sim.c")
+else()
+    list(APPEND SRCS_LIST "adc.c")
+    list(APPEND SRCS_LIST "./power/asic_reset.c")
+    list(APPEND SRCS_LIST "./power/TPS546.c" "./power/DS4432U.c" "./power/INA260.c")
+endif()
+
+idf_component_register(
+SRCS ${SRCS_LIST}
 
 INCLUDE_DIRS
     "."

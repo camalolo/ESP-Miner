@@ -22,6 +22,10 @@
 #include "asic_reset.h"
 #include "asic_init.h"
 
+#ifdef CONFIG_RUN_ON_DEV_BOARD
+#include "simulation/asic_sim.h"
+#endif
+
 static GlobalState GLOBAL_STATE;
 
 static const char * TAG = "bitaxe";
