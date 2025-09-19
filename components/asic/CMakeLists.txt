@@ -1,15 +1,22 @@
-idf_component_register(
-SRCS 
+set(SRCS_LIST
     "bm1370.c"
     "bm1368.c"
     "bm1366.c"
     "bm1397.c"
-    "serial.c"
     "crc.c"
     "common.c"
-    "asic.c"
     "frequency_transition_bmXX.c"
     "pll.c"
+)
+
+if(CONFIG_RUN_ON_DEV_BOARD)
+    list(APPEND SRCS_LIST "../../main/simulation/serial_sim.c" "../../main/simulation/asic_sim.c")
+else()
+    list(APPEND SRCS_LIST "serial.c" "asic.c")
+endif()
+
+idf_component_register(
+SRCS ${SRCS_LIST}
 
 INCLUDE_DIRS 
     "include"

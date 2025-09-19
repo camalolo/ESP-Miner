@@ -4,6 +4,11 @@
 #include "EMC2101.h"
 #include "EMC2103.h"
 
+#ifdef CONFIG_RUN_ON_DEV_BOARD
+#include "../simulation/emc2101_sim.h"
+#include "../simulation/emc2103_sim.h"
+#endif
+
 static const char * TAG = "thermal";
 
 esp_err_t Thermal_init(DeviceConfig * DEVICE_CONFIG)

@@ -59,6 +59,10 @@ static bool isFactoryTest = false;
 static void tests_done(GlobalState * GLOBAL_STATE, bool test_result);
 
 static bool should_test() {
+    #ifdef CONFIG_RUN_ON_DEV_BOARD
+    ESP_LOGI(TAG, "Skipping should_test() in dev board mode.");
+    return false;
+    #endif
     uint64_t is_factory_flash = nvs_config_get_u64(NVS_CONFIG_BEST_DIFF, 0) < 1;
     uint16_t is_self_test_flag_set = nvs_config_get_u16(NVS_CONFIG_SELF_TEST, 0);
     if (is_factory_flash && is_self_test_flag_set) {

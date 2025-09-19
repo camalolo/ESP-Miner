@@ -4,6 +4,8 @@
 #include "global_state.h"
 #include "esp_log.h"
 
+#include "simulation/device_config_sim.h"
+
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 
 static const char * TAG = "device_config";
@@ -11,6 +13,10 @@ static const char * TAG = "device_config";
 esp_err_t device_config_init(void * pvParameters)
 {
     GlobalState * GLOBAL_STATE = (GlobalState *) pvParameters;
+
+#ifdef CONFIG_RUN_ON_DEV_BOARD
+    device_config_sim_init();
+#endif
 
     // TODO: Read board version from eFuse
 

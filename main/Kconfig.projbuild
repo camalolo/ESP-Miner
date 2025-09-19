@@ -1,5 +1,12 @@
 menu "Bitaxe Configuration"
 
+    config RUN_ON_DEV_BOARD
+        bool "Run on dev board"
+        default n
+        help
+            Enable dev board compatibility mode (bitaxe specific components disabled).
+            Disable for production hardware.
+
     menu "GPIO Pin Configuration"
 
         config GPIO_BUTTON_BOOT

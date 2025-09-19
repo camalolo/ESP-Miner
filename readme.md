@@ -118,6 +118,23 @@ In order to unlock the Input fields for ASIC Frequency and ASIC Core Voltage you
 
 ## Development
 
+### Dev Board Simulation
+
+ESP-Miner includes comprehensive hardware simulation capabilities for development on ESP32S3 dev boards without physical Bitaxe hardware. When `CONFIG_RUN_ON_DEV_BOARD=y` is set in `sdkconfig.defaults`, the firmware simulates all major hardware components:
+
+- **Temperature sensors** (EMC2101/EMC2103): Realistic temperature readings with natural variation
+- **Power monitoring** (INA260): Stable voltage/current measurements around typical values
+- **Voltage regulation** (TPS546): Configurable voltage output with realistic control
+- **Digital potentiometer** (DS4432U): Current code settings for voltage control
+- **ASIC mining** (BM1368 and other supported chips): Simulated mining operations with realistic result generation
+- **ADC (Analog-to-Digital Converter)**: Simulated vcore voltage readings based on configured ASIC voltage with small random variations
+- **ASIC Reset**: Simulated hardware reset operations
+- **Device Configuration**: Automatic NVS initialization with simulation defaults (device model, ASIC model, board version)
+- **Serial/UART Communication**: Simulated serial interface operations for ASIC communication
+- **Test Framework**: Comprehensive testing suite for validating all simulation modules
+
+This enables full firmware testing, UI development, debugging, and continuous integration without requiring physical hardware. The simulation includes realistic randomization for sensor values and probabilistic ASIC result generation. See [`main/simulation/README.md`](./main/simulation/README.md) for detailed documentation and testing instructions.
+
 ### Prerequisites
 
 - Install the ESP-IDF toolchain from https://docs.espressif.com/projects/esp-idf/en/stable/esp32/get-started/
