@@ -39,6 +39,7 @@
 #include "statistics_task.h"
 #include "theme_api.h"  // Add theme API include
 #include "axe-os/api/system/asic_settings.h"
+#include "mdns.h"
 #include "http_server.h"
 #include "system.h"
 #include "websocket.h"
@@ -731,7 +732,23 @@ static esp_err_t GET_system_info(httpd_req_t * req)
     }
 
     char * ssid = nvs_config_get_string(NVS_CONFIG_WIFI_SSID, CONFIG_ESP_WIFI_SSID);
-    char * hostname = nvs_config_get_string(NVS_CONFIG_HOSTNAME, CONFIG_LWIP_LOCAL_HOSTNAME);
+    char * hostname_base = nvs_config_get_string(NVS_CONFIG_HOSTNAME, CONFIG_LWIP_LOCAL_HOSTNAME);
+    char mdns_hostname[64] = {0};
+    char hostname[64];
+    if (GLOBAL_STATE->SYSTEM_MODULE.is_connected) {
+        esp_err_t mdns_err = mdns_hostname_get(mdns_hostname);
+        ESP_LOGI(TAG, "mdns_hostname_get returned %d, hostname: %s", mdns_err, mdns_hostname);
+        if (mdns_err == ESP_OK && strlen(mdns_hostname) > 0) {
+            snprintf(hostname, sizeof(hostname), "%s.local", mdns_hostname);
+            ESP_LOGI(TAG, "Using mDNS hostname: %s", hostname);
+        } else {
+            strcpy(hostname, hostname_base);
+            ESP_LOGI(TAG, "Using base hostname: %s", hostname);
+        }
+    } else {
+        strcpy(hostname, hostname_base);
+        ESP_LOGI(TAG, "Device not connected, using base hostname: %s", hostname);
+    }
     char * stratumURL = nvs_config_get_string(NVS_CONFIG_STRATUM_URL, CONFIG_STRATUM_URL);
     char * fallbackStratumURL = nvs_config_get_string(NVS_CONFIG_FALLBACK_STRATUM_URL, CONFIG_FALLBACK_STRATUM_URL);
     char * stratumUser = nvs_config_get_string(NVS_CONFIG_STRATUM_USER, CONFIG_STRATUM_USER);
@@ -747,6 +764,15 @@ static esp_err_t GET_system_info(httpd_req_t * req)
 
     int8_t wifi_rssi = -90;
     get_wifi_current_rssi(&wifi_rssi);
+
+    esp_netif_t *netif = esp_netif_get_handle_from_ifkey("WIFI_STA_DEF");
+    char ip_str[16] = "";
+    if (netif != NULL) {
+        esp_netif_ip_info_t ip_info;
+        if (esp_netif_get_ip_info(netif, &ip_info) == ESP_OK) {
+            inet_ntop(AF_INET, &ip_info.ip, ip_str, sizeof(ip_str));
+        }
+    }
 
     cJSON * root = cJSON_CreateObject();
     cJSON_AddNumberToObject(root, "power", GLOBAL_STATE->POWER_MANAGEMENT_MODULE.power);
@@ -776,6 +802,7 @@ static esp_err_t GET_system_info(httpd_req_t * req)
     cJSON_AddStringToObject(root, "hostname", hostname);
     cJSON_AddStringToObject(root, "wifiStatus", GLOBAL_STATE->SYSTEM_MODULE.wifi_status);
     cJSON_AddNumberToObject(root, "wifiRSSI", wifi_rssi);
+    cJSON_AddStringToObject(root, "ip", ip_str);
     cJSON_AddNumberToObject(root, "apEnabled", GLOBAL_STATE->SYSTEM_MODULE.ap_enabled);
     cJSON_AddNumberToObject(root, "sharesAccepted", GLOBAL_STATE->SYSTEM_MODULE.shares_accepted);
     cJSON_AddNumberToObject(root, "sharesRejected", GLOBAL_STATE->SYSTEM_MODULE.shares_rejected);
@@ -839,7 +866,7 @@ static esp_err_t GET_system_info(httpd_req_t * req)
     }
 
     free(ssid);
-    free(hostname);
+    free(hostname_base);
     free(stratumURL);
     free(fallbackStratumURL);
     free(stratumUser);
