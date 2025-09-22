@@ -169,19 +169,12 @@ export class SwarmComponent implements OnInit, OnDestroy {
   private getAllDeviceInfo(addresses: string[], errorHandler: (error: any, address: string) => Observable<SwarmDevice[] | null>, fetchAsic: boolean = true) {
     return from(addresses).pipe(
       mergeMap(address => forkJoin({
-        info: this.httpClient.get(`http://${address}/api/system/info`).pipe(catchError(error => {
-          if (error.status === 401 || error.status === 0) {
-            // Show warning for potential older device or CORS blocked (likely 401)
-            this.toastr.warning(`Potential swarm peer detected at ${address} - upgrade its firmware to be able to add it.`);
-            return of({ _corsError: 401 });
-          }
-          throw error;
-        })),
+        info: this.httpClient.get(`http://${address}/api/system/info`).pipe(catchError(() => of(null))),
         asic: fetchAsic ? this.httpClient.get(`http://${address}/api/system/asic`).pipe(catchError(() => of({}))) : of({})
       }).pipe(
         map(({ info, asic }) => {
-          // Skip processing if we already showed the warning
-          if ((info as any)._corsError === 401) {
+          // Skip processing if failed silently
+          if (info === null) {
             return null;
           }
 
