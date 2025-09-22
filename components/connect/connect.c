@@ -223,6 +223,52 @@ static void event_handler(void * arg, esp_event_base_t event_base, int32_t event
         ESP_LOGI(TAG, "Connected to SSID: %s", GLOBAL_STATE->SYSTEM_MODULE.ssid);
 
         wifi_softap_off();
+
+        /* Initialize mDNS after connection */
+        char * hostname = nvs_config_get_string(NVS_CONFIG_HOSTNAME, CONFIG_LWIP_LOCAL_HOSTNAME);
+        esp_err_t err = mdns_init();
+        if (err != ESP_OK) {
+            ESP_LOGW(TAG, "mDNS/Avahi initialization failed: %s", esp_err_to_name(err));
+            ESP_LOGW(TAG, "Device will not be discoverable via mDNS/Bonjour/Avahi");
+        } else {
+            ESP_LOGI(TAG, "mDNS/Avahi initialized successfully - device discoverable on network");
+
+            /* Set mDNS hostname */
+            err = mdns_hostname_set(hostname);
+            if (err != ESP_OK) {
+                ESP_LOGW(TAG, "mDNS hostname setup failed: %s", esp_err_to_name(err));
+                ESP_LOGW(TAG, "Device hostname not set for mDNS discovery");
+            } else {
+                ESP_LOGI(TAG, "mDNS hostname set to: %s.local", hostname);
+                ESP_LOGI(TAG, "Access device at: http://%s.local", hostname);
+            }
+
+            /* Set mDNS instance name */
+            uint8_t mac[6];
+            esp_wifi_get_mac(WIFI_IF_STA, mac);
+            char mac_suffix[6];
+            snprintf(mac_suffix, sizeof(mac_suffix), "%02X%02X", mac[4], mac[5]);
+
+            char instance_name[64];
+            snprintf(instance_name, sizeof(instance_name), "Bitaxe %s %s (%s)",
+                     GLOBAL_STATE->DEVICE_CONFIG.family.name,
+                     GLOBAL_STATE->DEVICE_CONFIG.board_version,
+                     mac_suffix);
+            
+            /* Add HTTP service */
+            err = mdns_service_add(instance_name, "_http", "_tcp", 80, NULL, 0);
+            if (err != ESP_OK) {
+                ESP_LOGW(TAG, "mDNS HTTP service registration failed: %s", esp_err_to_name(err));
+                ESP_LOGW(TAG, "HTTP service not advertised via mDNS");
+            } else {
+                ESP_LOGI(TAG, "mDNS HTTP service registered: _http._tcp port 80");
+                ESP_LOGI(TAG, "Discover with: avahi-browse _http._tcp");
+                ESP_LOGI(TAG, "mDNS instance: %s", instance_name);
+            }
+
+            ESP_LOGI(TAG, "mDNS/Avahi setup complete - device ready for network discovery");
+        }
+        free(hostname);
     }
 }
 
@@ -390,44 +436,6 @@ void wifi_init(void * pvParameters)
             ESP_LOGI(TAG, "ESP_WIFI setting hostname to: %s", hostname);
         }
 
-        /* Initialize mDNS */
-        err = mdns_init();
-        if (err != ESP_OK) {
-            ESP_LOGW(TAG, "mDNS/Avahi initialization failed: %s", esp_err_to_name(err));
-            ESP_LOGW(TAG, "Device will not be discoverable via mDNS/Bonjour/Avahi");
-        } else {
-            ESP_LOGI(TAG, "mDNS/Avahi initialized successfully - device discoverable on network");
-
-            /* Set mDNS hostname */
-            err = mdns_hostname_set(hostname);
-            if (err != ESP_OK) {
-                ESP_LOGW(TAG, "mDNS hostname setup failed: %s", esp_err_to_name(err));
-                ESP_LOGW(TAG, "Device hostname not set for mDNS discovery");
-            } else {
-                ESP_LOGI(TAG, "mDNS hostname set to: %s.local", hostname);
-                ESP_LOGI(TAG, "Access device at: http://%s.local", hostname);
-            }
-
-            /* Set mDNS instance name */
-            err = mdns_instance_name_set("ESP-Miner Web Server");
-            if (err != ESP_OK) {
-                ESP_LOGW(TAG, "mDNS instance name setup failed: %s", esp_err_to_name(err));
-            } else {
-                ESP_LOGI(TAG, "mDNS instance: ESP-Miner Web Server");
-            }
-
-            /* Add HTTP service */
-            err = mdns_service_add("ESP32 WebServer", "_http", "_tcp", 80, NULL, 0);
-            if (err != ESP_OK) {
-                ESP_LOGW(TAG, "mDNS HTTP service registration failed: %s", esp_err_to_name(err));
-                ESP_LOGW(TAG, "HTTP service not advertised via mDNS");
-            } else {
-                ESP_LOGI(TAG, "mDNS HTTP service registered: _http._tcp port 80");
-                ESP_LOGI(TAG, "Discover with: avahi-browse _http._tcp");
-            }
-
-            ESP_LOGI(TAG, "mDNS/Avahi setup complete - device ready for network discovery");
-        }
 
         free(hostname);
 
